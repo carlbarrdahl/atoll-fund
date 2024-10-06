@@ -28,13 +28,13 @@ export function CreateProjectForm() {
   const form = useForm<z.infer<typeof CreateProjectSchema>>({
     resolver: zodResolver(CreateProjectSchema),
     defaultValues: {
-      metadata: {
-        title: "Smoothie & Juice Popup Shop",
-        description: `**Objective:**\nCreate and crowdfund a 2-hour pop-up Smoothie Shop on the 13th floor of the Marina Hotel each afternoon. The shop will offer healthy, delicious smoothies and cold-pressed juices using natural ingredients in reusable cups.\n\n**Funding Goal:**\nRaise **$1,000** through a 'Genesis Goodness Group' using discounted pre-sales of smoothies.\n\n**Purpose:**\nThis initiative will serve the community while demonstrating a small, repeatable crowdfunding model for future projects.`,
-      },
-      minFundingAmount: 10, // Default minimum funding amount
-      target: 1000, // Default target amount
-      deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default deadline set to 30 days in the future
+      // metadata: {
+      //   title: "Smoothie & Juice Popup Shop",
+      //   description: `**Objective:**\nCreate and crowdfund a 2-hour pop-up Smoothie Shop on the 13th floor of the Marina Hotel each afternoon. The shop will offer healthy, delicious smoothies and cold-pressed juices using natural ingredients in reusable cups.\n\n**Funding Goal:**\nRaise **$1,000** through a 'Genesis Goodness Group' using discounted pre-sales of smoothies.\n\n**Purpose:**\nThis initiative will serve the community while demonstrating a small, repeatable crowdfunding model for future projects.`,
+      // },
+      // minFundingAmount: 10, // Default minimum funding amount
+      // target: 1000, // Default target amount
+      // deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default deadline set to 30 days in the future
     },
   });
   const router = useRouter();
