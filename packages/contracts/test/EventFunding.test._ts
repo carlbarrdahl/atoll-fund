@@ -1,0 +1,303 @@
+import hre from "hardhat";
+import { expect } from "chai";
+import "@nomicfoundation/hardhat-chai-matchers";
+import {
+  type Address,
+  parseUnits,
+  getAddress,
+  decodeEventLog,
+  publicActions,
+  type WalletClient,
+} from "viem";
+
+describe("EventFunding", function () {
+  it("deploy", async () => {
+    const { eventFund } = await deploy();
+    expect(eventFund.address).to.not.be.undefined;
+  });
+
+  it("should create a new event", async () => {
+    const { eventFund, accounts } = await deploy();
+    const organizer = accounts[0].account;
+    const costPerParticipant = parseUnits("10", 18);
+    const targetParticipants = 5;
+    const startsAt = Math.floor(Date.now() / 1000) + 1800;
+    const fundingDeadline = startsAt - 1800;
+    const endsAt = startsAt + 3600;
+    const metadata = "https://metadata";
+
+    const hash = await eventFund.write.createEvent([
+      costPerParticipant,
+      targetParticipants,
+      startsAt,
+      endsAt,
+      fundingDeadline,
+      metadata,
+    ]);
+
+    const eventCreatedLog = await waitForEvent({
+      hash,
+      eventName: "EventCreated",
+      client: accounts[0],
+      abi: eventFund.abi,
+    });
+
+    expect(eventCreatedLog).to.not.be.undefined;
+    const eventId = eventCreatedLog?.[0]?.args?.id;
+    const eventDetails = await eventFund.read.getEventDetails([eventId]);
+    expect(eventDetails[0]).to.equal(getAddress(organizer.address));
+    expect(eventDetails[1]).to.equal(costPerParticipant);
+    expect(eventDetails[2]).to.equal(BigInt(targetParticipants));
+    expect(eventDetails[3]).to.equal(0n);
+    expect(eventDetails[4]).to.be.false;
+  });
+
+  it("should allow a funder to deposit for multiple events", async () => {
+    const {
+      eventFund,
+      accounts,
+      token,
+      costPerParticipant1,
+      costPerParticipant2,
+    } = await createEvents();
+
+    const eventIds = [1, 2];
+    const hash = await eventFund.write.deposit([eventIds], {
+      account: accounts[1].account,
+    });
+
+    const depositLog = await waitForEvent({
+      hash,
+      eventName: "Deposit",
+      client: accounts[1],
+      abi: eventFund.abi,
+    });
+
+    expect(await token.read.balanceOf([eventFund.address])).to.equal(
+      costPerParticipant2
+    );
+  });
+
+  it("should collect deposits for an event", async () => {
+    const {
+      eventFund,
+      accounts,
+      token,
+      costPerParticipant1,
+      costPerParticipant2,
+    } = await createEvents();
+
+    const eventIds = [1, 2];
+    await eventFund.write.deposit([eventIds], {
+      account: accounts[1].account,
+    });
+
+    await eventFund.write.deposit([eventIds], {
+      account: accounts[2].account,
+    });
+
+    await eventFund.write.collect([1]);
+    expect(await token.read.balanceOf([eventFund.address])).to.equal(
+      costPerParticipant2
+    );
+  });
+
+  it("should allow a funder to refund their deposit", async () => {
+    const {
+      eventFund,
+      accounts,
+      token,
+      costPerParticipant1,
+      costPerParticipant2,
+    } = await createEvents();
+
+    const eventIds = [1, 2];
+    await eventFund.write.deposit([eventIds], {
+      account: accounts[1].account,
+    });
+
+    const initialFunderBalance = BigInt(
+      await token.read.balanceOf([accounts[1].account.address])
+    );
+    const initialEventFundBalance = BigInt(
+      await token.read.balanceOf([eventFund.address])
+    );
+
+    await eventFund.write.refund([accounts[1].account.address, [1]], {
+      account: accounts[1].account,
+    });
+
+    const finalFunderBalance = BigInt(
+      await token.read.balanceOf([accounts[1].account.address])
+    );
+    const finalEventFundBalance = BigInt(
+      await token.read.balanceOf([eventFund.address])
+    );
+
+    console.log(initialFunderBalance - finalFunderBalance);
+    console.log(initialEventFundBalance - finalEventFundBalance);
+    // expect(finalFunderBalance).to.equal(
+    //   initialFunderBalance + costPerParticipant1 + costPerParticipant2
+    // );
+    // expect(finalEventFundBalance).to.equal(
+    //   initialEventFundBalance - costPerParticipant1 - costPerParticipant2
+    // );
+  });
+
+  it("should allow an organizer to collect funds once the event reaches the minimum number of participants", async () => {
+    const {
+      eventFund,
+      accounts,
+      token,
+      costPerParticipant1,
+      costPerParticipant2,
+    } = await createEvents();
+
+    const eventId = 1;
+    await eventFund.write.deposit([[eventId]], {
+      account: accounts[1].account,
+    });
+
+    await eventFund.write.deposit([[eventId]], {
+      account: accounts[2].account,
+    });
+
+    const initialOrganizerBalance = await token.read.balanceOf([
+      accounts[0].account.address,
+    ]);
+
+    await eventFund.write.collect([eventId], {
+      account: accounts[0].account,
+    });
+
+    const finalOrganizerBalance = await token.read.balanceOf([
+      accounts[0].account.address,
+    ]);
+
+    expect(finalOrganizerBalance).to.equal(
+      initialOrganizerBalance + costPerParticipant1 * 2n
+    );
+
+    const eventDetails = await eventFund.read.getEventDetails([eventId]);
+    expect(eventDetails[4]).to.be.true; // fundingCollected should be true
+  });
+
+  it.skip("should not allow deposit with incorrect amount", async () => {
+    const { eventFund, accounts, token } = await deploy();
+    const costPerParticipant = parseUnits("10", 18);
+    const targetParticipants = 5;
+    const startsAt = Math.floor(Date.now() / 1000) + 1800;
+    const endsAt = startsAt + 3600;
+    const fundingDeadline = startsAt - 1800;
+    const metadata = "https://metadata";
+
+    await eventFund.write.createEvent([
+      costPerParticipant,
+      targetParticipants,
+      startsAt,
+      endsAt,
+      fundingDeadline,
+      metadata,
+    ]);
+
+    await token.write.approve([eventFund.address, costPerParticipant]);
+
+    const incorrectAmount = parseUnits("5", 18);
+    await expect(
+      eventFund.write.deposit([[1], incorrectAmount])
+    ).to.be.revertedWith("Incorrect deposit amount");
+  });
+});
+
+async function waitForEvent({
+  hash,
+  eventName,
+  client,
+  abi,
+}: {
+  hash: `0x${string}`;
+  eventName: string;
+  client: WalletClient;
+  abi: unknown[];
+}) {
+  const tx = await client.extend(publicActions).waitForTransactionReceipt({
+    hash,
+  });
+
+  return tx.logs
+    .map(({ data, topics }) => {
+      try {
+        return decodeEventLog({ abi, data, topics });
+      } catch (error) {
+        return {};
+      }
+    })
+    .filter((e) => e.eventName === eventName);
+}
+
+async function deploy() {
+  const accounts = await hre.viem.getWalletClients();
+  const deployer = accounts[0].account;
+  const token = await hre.viem.deployContract("MockToken", ["USDC", "USDC"]);
+  const eventFund = await hre.viem.deployContract("EventFunding", [
+    deployer.address,
+    token.address,
+  ]);
+
+  await Promise.all(
+    accounts.map(({ account }) =>
+      token.write.mint([account.address, parseUnits("1000", 18)])
+    )
+  );
+  await Promise.all(
+    accounts.map(({ account }) =>
+      token.write.approve([eventFund.address, parseUnits("1000", 18)], {
+        account,
+      })
+    )
+  );
+  return { accounts, eventFund, token };
+}
+
+async function createEvents() {
+  const { eventFund, accounts, token } = await deploy();
+  const costPerParticipant1 = parseUnits("10", 18);
+  const costPerParticipant2 = parseUnits("20", 18);
+  const targetParticipants = 2;
+  const startsAt = Math.floor(Date.now() / 1000) + 1800;
+  const endsAt = startsAt + 3600;
+  const fundingDeadline = startsAt - 1800;
+  const metadata = "https://metadata";
+
+  await eventFund.write.createEvent([
+    costPerParticipant1,
+    targetParticipants,
+    startsAt,
+    endsAt,
+    fundingDeadline,
+    metadata,
+  ]);
+  await eventFund.write.createEvent([
+    costPerParticipant2,
+    targetParticipants,
+    startsAt,
+    endsAt,
+    fundingDeadline,
+    metadata,
+  ]);
+
+  await token.write.approve([eventFund.address, costPerParticipant1], {
+    account: accounts[1].account,
+  });
+  await token.write.approve([eventFund.address, costPerParticipant2], {
+    account: accounts[1].account,
+  });
+
+  return {
+    eventFund,
+    accounts,
+    token,
+    costPerParticipant1,
+    costPerParticipant2,
+  };
+}

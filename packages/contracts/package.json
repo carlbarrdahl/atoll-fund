@@ -1,0 +1,26 @@
+{
+  "name": "@village-fund/contracts",
+  "exports": {
+    "./artifacts/EventFunding": "./artifacts/contracts/EventFunding.sol/EventFunding.json"
+  },
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:gas": "REPORT_GAS=true hardhat test",
+    "deploy": "hardhat run scripts/deploy.ts"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.11",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.12"
+  },
+  "dependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
+    "@nomicfoundation/hardhat-foundry": "^1.1.2",
+    "@openzeppelin/contracts": "^5.0.2",
+    "@useorbis/db-sdk": "^0.0.54-alpha",
+    "solady": "^0.0.246",
+    "solmate": "^6.2.0"
+  }
+}
