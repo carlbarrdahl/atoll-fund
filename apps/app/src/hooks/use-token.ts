@@ -47,8 +47,8 @@ export function useToken(account?: Address) {
     data: query.isPending
       ? null
       : {
-          address: contracts.token,
-          value: balance,
+          address: contracts?.token,
+          value: balance as number | undefined,
           formatted: formatUnits(BigInt(balance as number), Number(decimals)),
           symbol,
           decimals: Number(decimals),

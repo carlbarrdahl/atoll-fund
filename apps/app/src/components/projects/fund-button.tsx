@@ -1,9 +1,10 @@
 "use client";
-import { type Address, formatUnits, parseUnits } from "viem";
+
+import { type Address, parseUnits } from "viem";
 import { useParams } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -16,7 +17,6 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
-  DrawerTrigger,
 } from "~/components/ui/drawer";
 import { useAllowance, useApprove, useToken } from "~/hooks/use-token";
 import {
@@ -27,9 +27,13 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
-import { useFund } from "~/hooks/use-fund";
-import { useProjectDetails } from "~/hooks/use-project-details";
+import { useFund, useRefund } from "~/hooks/use-fund";
+import {
+  useContribution,
+  useProjectDetails,
+} from "~/hooks/use-project-details";
 import { TokenAmount } from "../token/token-amount";
+import { cn } from "~/lib/utils";
 
 const FundSchema = z.object({
   amount: z.coerce.number().positive(),
@@ -37,86 +41,118 @@ const FundSchema = z.object({
 
 export function FundButton() {
   const { projectAddress } = useParams();
-  const { data: details, queryKey: detailsQueryKey } = useProjectDetails(
-    projectAddress as Address,
-  );
-  const [isOpen, toggleOpen] = useState(false);
-
-  const { address } = useAccount();
-  const { data: token } = useToken(address);
+  const projectAddr = projectAddress as Address;
+  const { data: details, queryKey: detailsQueryKey } =
+    useProjectDetails(projectAddr);
+  const [isOpen, setIsOpen] = useState(false);
   const form = useForm({
     resolver: zodResolver(FundSchema),
     defaultValues: { amount: 0 },
   });
 
+  const { address } = useAccount();
+  const { data: token } = useToken(address);
+  const { data: contribution } = useContribution(projectAddr, address);
   const queryClient = useQueryClient();
+
   const fund = useFund({
     onSuccess: () => {
-      toggleOpen(false);
-      queryClient.invalidateQueries(detailsQueryKey);
+      setIsOpen(false);
+      void queryClient.invalidateQueries(detailsQueryKey);
     },
   });
+
+  const refund = useRefund({
+    onSuccess: () => {
+      void queryClient.invalidateQueries(detailsQueryKey);
+    },
+  });
+
   const { data: allowance = 0n, queryKey } = useAllowance(
     address!,
-    projectAddress as Address,
+    projectAddr,
   );
-  const approve = useApprove(projectAddress as Address);
+  const approve = useApprove(projectAddr);
+
   const _amount = form.watch("amount");
   const amount = useMemo(() => {
     try {
-      return parseUnits(String(_amount), token?.decimals);
+      return parseUnits(String(_amount), token?.decimals ?? 18);
     } catch (error) {
-      console.log(error);
+      console.error(error);
       return 0n;
     }
-  }, [_amount]);
+  }, [_amount, token]);
+
+  const balance = token?.value ?? 0;
+
+  const handleSubmit = form.handleSubmit((values) => {
+    const amount = parseUnits(String(values.amount), token?.decimals ?? 18);
+    if (amount > allowance) {
+      return approve.writeContractAsync(amount).then(() => {
+        void queryClient.invalidateQueries(queryKey);
+      });
+    }
+    return fund.writeContractAsync(amount);
+  });
 
   return (
     <div className="sticky bottom-0 -mx-2 flex items-center justify-end border-t bg-white p-1">
-      <Drawer open={isOpen} onOpenChange={() => toggleOpen(!isOpen)}>
-        <DrawerTrigger asChild>
-          <Button className="w-full" onClick={() => toggleOpen(!isOpen)}>
+      <Drawer open={isOpen} onOpenChange={() => setIsOpen(!isOpen)}>
+        {details?.canRefund && contribution ? (
+          <Button
+            className="w-full"
+            isLoading={refund.isPending}
+            onClick={() => refund.writeContractAsync()}
+          >
+            Refund <TokenAmount amount={contribution} />
+          </Button>
+        ) : (
+          <Button className="w-full" onClick={() => setIsOpen(!isOpen)}>
             Fund Project
           </Button>
-        </DrawerTrigger>
+        )}
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>Fund Project</DrawerTitle>
             <DrawerDescription>Enter amount to fund</DrawerDescription>
           </DrawerHeader>
           <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit((values) => {
-                const amount = parseUnits(
-                  String(values.amount),
-                  token?.decimals,
-                );
-                console.log("Fund", amount);
-                if (amount > allowance)
-                  return approve
-                    .writeContractAsync(amount)
-                    .then(() => queryClient.invalidateQueries(queryKey));
-
-                return fund.writeContractAsync(amount);
-              })}
-            >
+            <form onSubmit={handleSubmit}>
               <FormField
                 control={form.control}
                 name="amount"
                 render={({ field }) => (
-                  <FormItem className="px-4">
+                  <FormItem className="relative px-4">
                     <FormControl>
-                      <Input
-                        autoFocus
-                        type="tel"
-                        placeholder="0"
-                        {...field}
-                        onChange={(e) =>
-                          !isNaN(Number(e.target.value)) &&
-                          field.onChange(Number(e.target.value))
-                        }
-                      />
+                      <div className="relative">
+                        <Input
+                          autoFocus
+                          type="tel"
+                          placeholder="0"
+                          {...field}
+                          onChange={(e) => {
+                            const value = Number(e.target.value);
+                            if (!isNaN(value)) field.onChange(value);
+                          }}
+                        />
+                        <div className="absolute right-2 top-2 text-sm font-semibold text-gray-400">
+                          {token?.symbol}
+                        </div>
+
+                        <div
+                          className={cn(
+                            "pt-0.5 text-right text-xs text-gray-500",
+                            {
+                              ["text-red-500"]: balance < amount,
+                            },
+                          )}
+                        >
+                          Balance: <TokenAmount amount={balance} />
+                        </div>
+                      </div>
                     </FormControl>
+
                     <FormMessage />
                   </FormItem>
                 )}
@@ -128,10 +164,10 @@ export function FundButton() {
                       Cancel
                     </Button>
                   </DrawerClose>
-
                   <Button
                     className="flex-1"
                     type="submit"
+                    disabled={balance < amount}
                     isLoading={approve.isPending || fund.isPending}
                   >
                     {amount > allowance ? "Approve" : "Transfer"}{" "}

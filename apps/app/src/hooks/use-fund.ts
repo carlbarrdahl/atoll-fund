@@ -24,7 +24,7 @@ export function useFund({ onSuccess }: { onSuccess: () => void }) {
         },
         {
           onSuccess: () => {
-            toast({ title: "Funding succesful!" });
+            toast({ title: "Funding successful!" });
             onSuccess();
           },
           onError: (error) =>
@@ -34,6 +34,37 @@ export function useFund({ onSuccess }: { onSuccess: () => void }) {
             }),
         },
       ).then((hash) => waitForEvent(hash, "Funded"));
+    },
+  };
+}
+
+export function useRefund({ onSuccess }: { onSuccess: () => void }) {
+  const { projectAddress } = useParams();
+  const { toast } = useToast();
+  const waitForEvent = useWaitForEvent(abi);
+  const { writeContractAsync, ...query } = useWriteContract();
+  return {
+    ...query,
+    writeContractAsync: () => {
+      return writeContractAsync(
+        {
+          address: getAddress(projectAddress as string),
+          abi,
+          functionName: "refund",
+          args: [],
+        },
+        {
+          onSuccess: () => {
+            toast({ title: "Refund successful!" });
+            onSuccess();
+          },
+          onError: (error) =>
+            toast({
+              title: extractErrorReason(String(error)) ?? "Refund error",
+              variant: "destructive",
+            }),
+        },
+      ).then((hash) => waitForEvent(hash, "Refunded"));
     },
   };
 }

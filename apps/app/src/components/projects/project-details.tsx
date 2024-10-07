@@ -2,7 +2,6 @@
 
 import { BanknoteIcon, ClockIcon } from "lucide-react";
 import { format } from "date-fns";
-import { Button } from "~/components/ui/button";
 import { Markdown } from "~/components/ui/markdown";
 import { Meta } from "~/components/ui/meta";
 import { type ReactNode } from "react";
@@ -57,8 +56,4 @@ export function ProjectDetails({ action = null }: { action: ReactNode }) {
       <FundButton />
     </>
   );
-}
-
-function ActionButton() {
-  return <Button>Refund</Button>;
 }
