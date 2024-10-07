@@ -17,7 +17,7 @@ export default {
       },
       colors: {
         ...colors,
-        primary: colors.cyan,
+        primary: colors.indigo,
       },
     },
   },
