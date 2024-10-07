@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { type PropsWithChildren } from "react";
 import { ConnectKitButton } from "connectkit";
+import { useIsFetching } from "@tanstack/react-query";
 import { Compass, UserIcon } from "lucide-react";
 
 import { Button } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
-import { useIsFetching } from "@tanstack/react-query";
-import { ComponentType, PropsWithChildren } from "react";
-import { useParams, usePathname } from "next/navigation";
 
 export function Header() {
   const isFetching = useIsFetching();
@@ -56,15 +56,13 @@ export function Header() {
           }}
         </ConnectKitButton.Custom>
       </div>
-      <div className="-mx-2 h-[2px] bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500" />
+      <div className="-mx-2 h-[2px] bg-gradient-to-r from-green-400 via-orange-400 to-pink-500" />
     </>
   );
 }
 
 function NavLink({ href, children }: PropsWithChildren<{ href: string }>) {
-  const params = useParams();
   const pathname = usePathname();
-  console.log(params, pathname);
   const isActive = pathname === href;
   return (
     <Link href={href}>

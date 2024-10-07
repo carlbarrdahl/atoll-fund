@@ -12,6 +12,7 @@ import { Progress } from "~/components/ui/progress";
 import { TokenAmount } from "../token/token-amount";
 import { useParams } from "next/navigation";
 import { type Address } from "viem";
+import { Badge } from "../ui/badge";
 
 export function ProjectDetails({ action = null }: { action: ReactNode }) {
   const { projectAddress } = useParams();
@@ -29,9 +30,14 @@ export function ProjectDetails({ action = null }: { action: ReactNode }) {
     <>
       <div className="flex items-center gap-1 bg-white py-2">
         {action}
-        <h1 className="text-lg font-semibold sm:text-2xl md:text-3xl">
+        <h1 className="flex-1 text-lg font-semibold sm:text-2xl md:text-3xl">
           {metadata?.title}
         </h1>
+        {details?.canRefund ? (
+          <Badge variant="destructive">Not funded</Badge>
+        ) : details?.canWithdraw ? (
+          <Badge variant="success">Funded</Badge>
+        ) : null}
       </div>
       <div className="mb-4 flex flex-col gap-2 text-sm">
         <Meta icon={ClockIcon}>

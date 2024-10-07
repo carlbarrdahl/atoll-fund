@@ -99,10 +99,11 @@ export function FundButton() {
   return (
     <div className="sticky bottom-0 -mx-2 flex items-center justify-end border-t bg-white p-1">
       <Drawer open={isOpen} onOpenChange={() => setIsOpen(!isOpen)}>
-        {details?.canRefund && contribution ? (
+        {details?.canRefund ? (
           <Button
             className="w-full"
             isLoading={refund.isPending}
+            disabled={!contribution}
             onClick={() => refund.writeContractAsync()}
           >
             Refund <TokenAmount amount={contribution} />
