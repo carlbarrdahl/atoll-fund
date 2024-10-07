@@ -11,7 +11,7 @@ import { useIsFetching } from "@tanstack/react-query";
 export function Header() {
   const isFetching = useIsFetching();
   return (
-    <header>
+    <>
       <div className="flex items-center justify-between px-2 py-1">
         <div className="flex items-center gap-2">
           <Link href={`/`} className="mr-8">
@@ -58,7 +58,7 @@ export function Header() {
           }}
         </ConnectKitButton.Custom>
       </div>
-      <div className="h-[2px] bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500" />
-    </header>
+      <div className="-mx-2 h-[2px] bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-500" />
+    </>
   );
 }
