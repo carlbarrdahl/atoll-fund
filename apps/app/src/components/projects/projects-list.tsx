@@ -9,6 +9,7 @@ import { format } from "date-fns";
 import { useProjectDetails } from "~/hooks/use-project-details";
 import { useMetadata } from "~/hooks/use-metadata";
 import { TokenAmount } from "../token/token-amount";
+import { stripMarkdown, truncate } from "~/lib/utils";
 
 export function ProjectsList() {
   const { data: projects, isPending, error } = useProjects();
@@ -60,7 +61,9 @@ function Project({ address }: { address: Address }) {
           </div>
         </Meta>
       </div>
-      <p className="text-sm">{metadata?.description}</p>
+      <p className="text-sm">
+        {truncate(stripMarkdown(metadata?.description), 120)}
+      </p>
     </div>
   );
 }
