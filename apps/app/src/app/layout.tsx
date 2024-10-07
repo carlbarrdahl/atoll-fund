@@ -23,9 +23,9 @@ export default function RootLayout({
         <MobileLayoutFix>
           <TRPCReactProvider>
             <Web3Provider>
-              <main className="relative mx-auto flex h-full min-h-screen max-w-screen-md flex-col px-2">
+              <main className="relative mx-auto flex h-full min-h-screen max-w-screen-md flex-col">
                 <Header />
-                {children}
+                <div className="flex-1 px-2">{children}</div>
               </main>
               <Toaster />
             </Web3Provider>

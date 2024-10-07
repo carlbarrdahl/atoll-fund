@@ -1,6 +1,7 @@
 import { type Config } from "tailwindcss";
 import { fontFamily } from "tailwindcss/defaultTheme";
 
+import colors from "tailwindcss/colors";
 export default {
   darkMode: ["class"],
   content: ["./src/**/*.tsx"],
@@ -14,7 +15,10 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
-      colors: {},
+      colors: {
+        ...colors,
+        primary: colors.cyan,
+      },
     },
   },
   plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
