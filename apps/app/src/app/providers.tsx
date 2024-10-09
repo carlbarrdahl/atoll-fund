@@ -3,7 +3,6 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { baseSepolia, hardhat } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
-import { metadata } from "./layout";
 
 const config = createConfig(
   getDefaultConfig({
@@ -21,10 +20,11 @@ const config = createConfig(
     walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
 
     // Required App Info
-    appName: metadata.title as string,
+    appName: "Atoll",
 
     // Optional App Info
-    appDescription: metadata.description!,
+    appDescription:
+      "Atoll is a Kickstarter for pop-up cities and network states, enabling communities to collectively fund projects, events, and initiatives.",
     appUrl: "https://family.co", // your app's url
     appIcon: "https://family.co/logo.png", // your app's icon, no bigger than 1024x1024px (max. 1MB)
   }),
