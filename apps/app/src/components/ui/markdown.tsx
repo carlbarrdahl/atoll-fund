@@ -8,7 +8,7 @@ export function Markdown({
 }: ComponentProps<typeof ReactMarkdown>) {
   return (
     <ReactMarkdown
-      className={cn("prose-sm sm:prose max-w-full", className)}
+      className={cn("prose prose-base max-w-full sm:prose-lg", className)}
       {...props}
     />
   );

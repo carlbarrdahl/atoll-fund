@@ -2,58 +2,75 @@ import hre from "hardhat";
 import { formatEther, publicActions } from "viem";
 
 export async function main() {
-  console.log(`Deploying contract to ${hre.network.name}...`);
+  console.log(`Deploying contracts to ${hre.network.name}...`);
 
   const accounts = await hre.viem.getWalletClients();
   const deployer = accounts[0].account;
-  console.log(
-    "Balance: ",
-    formatEther(
-      await accounts[0]
-        .extend(publicActions)
-        .getBalance({ address: deployer.address })
-    )
-  );
+  const balance = await accounts[0]
+    .extend(publicActions)
+    .getBalance({ address: deployer.address });
+  console.log("Balance: ", formatEther(balance));
 
-  const token = await hre.viem.deployContract("MockToken", ["USDC", "USDC"]);
-  const factory = await hre.viem.deployContract("ProjectFactory", []);
-
-  console.log(`MockToken deployed to ${token.address}`);
-  console.log(`EventFunding deployed to ${factory.address}`);
-
-  if (hre.network.name === "localhost") {
-    console.log("Creating events...");
-
-    // await createEvents();
-    // for (const event of events) {
-    //   // const metadataURI = await uploadMetadataToIPFS(event.metadata);
-    //   const organizer = accounts[0].account;
-
-    //   const metadataURI = await fetch(
-    //     "https://api.pinata.cloud/pinning/pinFileToIPFS",
-    //     {
-    //       method: "POST",
-    //       headers: { Authorization: `Bearer ${process.env.PINATA_JWT}` },
-    //       body: toFormData(event.metadata),
-    //     }
-    //   )
-    //     .then((r) => r.json())
-    //     .then(
-    //       (r) => `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${r.IpfsHash}`
-    //     );
-    //   console.log(metadataURI);
-    //   // const { IpfsHash: cid } = await res.json();
-
-    //   return;
-    //   await eventFund.write.createEvent(
-    //     [event.costPerParticipant, event.targetParticipants, metadataURI],
-    //     { account: organizer }
-    //   );
-    //   console.log(
-    //     `Event ${event.id} created with metadata URI: ${metadataURI}`
-    //   );
-    // }
+  try {
+    const token = await hre.viem.deployContract("MockToken", ["USDC", "USDC"]);
+    console.log(`MockToken deployed to ${token.address}`);
+  } catch (error) {
+    console.error("Failed to deploy MockToken:", error);
+    return;
   }
+
+  let projectAddress;
+  try {
+    const project = await hre.viem.deployContract("Project", []);
+    projectAddress = project.address;
+    console.log(`Project deployed to ${projectAddress}`);
+  } catch (error) {
+    console.error("Failed to deploy Project:", error);
+    return;
+  }
+
+  try {
+    const factory = await hre.viem.deployContract("ProjectFactory", [
+      projectAddress,
+    ]);
+    console.log(`ProjectFactory deployed to ${factory.address}`);
+  } catch (error) {
+    console.error("Failed to deploy ProjectFactory:", error);
+  }
+}
+
+if (hre.network.name === "localhost") {
+  console.log("Creating events...");
+
+  // await createEvents();
+  // for (const event of events) {
+  //   // const metadataURI = await uploadMetadataToIPFS(event.metadata);
+  //   const organizer = accounts[0].account;
+
+  //   const metadataURI = await fetch(
+  //     "https://api.pinata.cloud/pinning/pinFileToIPFS",
+  //     {
+  //       method: "POST",
+  //       headers: { Authorization: `Bearer ${process.env.PINATA_JWT}` },
+  //       body: toFormData(event.metadata),
+  //     }
+  //   )
+  //     .then((r) => r.json())
+  //     .then(
+  //       (r) => `https://${process.env.PINATA_GATEWAY_URL}/ipfs/${r.IpfsHash}`
+  //     );
+  //   console.log(metadataURI);
+  //   // const { IpfsHash: cid } = await res.json();
+
+  //   return;
+  //   await eventFund.write.createEvent(
+  //     [event.costPerParticipant, event.targetParticipants, metadataURI],
+  //     { account: organizer }
+  //   );
+  //   console.log(
+  //     `Event ${event.id} created with metadata URI: ${metadataURI}`
+  //   );
+  // }
 }
 
 // We recommend this pattern to be able to use async/await everywhere

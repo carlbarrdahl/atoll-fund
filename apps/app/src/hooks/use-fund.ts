@@ -69,6 +69,37 @@ export function useRefund({ onSuccess }: { onSuccess: () => void }) {
   };
 }
 
+export function useWithdraw({ onSuccess }: { onSuccess: () => void }) {
+  const { projectAddress } = useParams();
+  const { toast } = useToast();
+  const waitForEvent = useWaitForEvent(abi);
+  const { writeContractAsync, ...query } = useWriteContract();
+  return {
+    ...query,
+    writeContractAsync: () => {
+      return writeContractAsync(
+        {
+          address: getAddress(projectAddress as string),
+          abi,
+          functionName: "withdraw",
+          args: [],
+        },
+        {
+          onSuccess: () => {
+            toast({ title: "Withdraw successful!" });
+            onSuccess();
+          },
+          onError: (error) =>
+            toast({
+              title: extractErrorReason(String(error)) ?? "Withdraw error",
+              variant: "destructive",
+            }),
+        },
+      ).then((hash) => waitForEvent(hash, "Withdrawn"));
+    },
+  };
+}
+
 function extractErrorReason(errorMessage: string): string {
   const regex = /reason:\s*(.*)$/m;
   const match = regex.exec(errorMessage);

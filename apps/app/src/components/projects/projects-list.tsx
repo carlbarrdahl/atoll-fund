@@ -10,6 +10,8 @@ import { useProjectDetails } from "~/hooks/use-project-details";
 import { useMetadata } from "~/hooks/use-metadata";
 import { TokenAmount } from "../token/token-amount";
 import { stripMarkdown, truncate } from "~/lib/utils";
+import { ProjectDetails } from "./project-details";
+import { ProjectBadge } from "./project-badge";
 
 export function ProjectsList() {
   const { data: projects, isPending, error } = useProjects();
@@ -40,12 +42,13 @@ export function ProjectsList() {
 function Project({ address }: { address: Address }) {
   const { data } = useProjectDetails(address);
   const { data: metadata } = useMetadata(data?.projectMetadata);
-  const { data: token } = useToken();
-  console.log(data, metadata);
   if (!data) return <div>...</div>;
   return (
     <div className="mb-2 flex-1">
-      <h2 className="mb-1 text-base font-bold">{metadata?.title}</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="mb-1 text-base font-bold">{metadata?.title}</h2>
+        <ProjectBadge projectAddress={address} />
+      </div>
       <div className="mb-2 flex gap-4 text-xs">
         <Meta icon={BanknoteIcon}>
           <div>

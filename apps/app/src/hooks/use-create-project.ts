@@ -21,6 +21,7 @@ export function useCreateProject() {
       target = 0n,
       minFundingAmount = 0n,
     }) => {
+      console.log({ deadline });
       return writeContractAsync(
         {
           address: getAddress(contracts?.factory as string),

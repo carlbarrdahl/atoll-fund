@@ -25,7 +25,7 @@ const config: HardhatUserConfig = {
     "base-sepolia": {
       url: "https://sepolia.base.org",
       accounts: [PRIVATE_KEY],
-      gasPrice: 1000000000,
+      // gasPrice: 1000000000,
     },
     hardhat: {
       chainId: 31337,

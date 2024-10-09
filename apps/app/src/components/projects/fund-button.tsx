@@ -1,10 +1,10 @@
 "use client";
 
-import { type Address, parseUnits } from "viem";
+import { type Address, formatUnits, parseUnits } from "viem";
 import { useParams } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -27,7 +27,7 @@ import {
   FormMessage,
 } from "~/components/ui/form";
 import { Input } from "~/components/ui/input";
-import { useFund, useRefund } from "~/hooks/use-fund";
+import { useFund, useRefund, useWithdraw } from "~/hooks/use-fund";
 import {
   useContribution,
   useProjectDetails,
@@ -40,15 +40,17 @@ const FundSchema = z.object({
 });
 
 export function FundButton() {
-  const { projectAddress } = useParams();
-  const projectAddr = projectAddress as Address;
-  const { data: details, queryKey: detailsQueryKey } =
-    useProjectDetails(projectAddr);
   const [isOpen, setIsOpen] = useState(false);
   const form = useForm({
     resolver: zodResolver(FundSchema),
     defaultValues: { amount: 0 },
   });
+
+  const { projectAddress } = useParams();
+  const projectAddr = projectAddress as Address;
+
+  const { data: details, queryKey: detailsQueryKey } =
+    useProjectDetails(projectAddr);
 
   const { address } = useAccount();
   const { data: token } = useToken(address);
@@ -63,6 +65,11 @@ export function FundButton() {
   });
 
   const refund = useRefund({
+    onSuccess: () => {
+      void queryClient.invalidateQueries(detailsQueryKey);
+    },
+  });
+  const withdraw = useWithdraw({
     onSuccess: () => {
       void queryClient.invalidateQueries(detailsQueryKey);
     },
@@ -96,23 +103,58 @@ export function FundButton() {
     return fund.writeContractAsync(amount);
   });
 
+  useEffect(() => {
+    if (token && details && !_amount) {
+      console.log(
+        "min amount",
+        details.minimumFundingAmount,
+        formatUnits(details.minimumFundingAmount, token.decimals),
+      );
+      form.setValue(
+        "amount",
+        formatUnits(details.minimumFundingAmount, token.decimals),
+      );
+    }
+  }, [details, token, form, _amount]);
+
   return (
     <div className="sticky bottom-0 -mx-2 flex items-center justify-end border-t bg-white p-1">
       <Drawer open={isOpen} onOpenChange={() => setIsOpen(!isOpen)}>
-        {details?.canRefund ? (
-          <Button
-            className="w-full"
-            isLoading={refund.isPending}
-            disabled={!contribution}
-            onClick={() => refund.writeContractAsync()}
-          >
-            Refund <TokenAmount amount={contribution} />
-          </Button>
-        ) : (
-          <Button className="w-full" onClick={() => setIsOpen(!isOpen)}>
-            Fund Project
-          </Button>
-        )}
+        {(() => {
+          switch (true) {
+            case details?.isWithdrawn:
+              return null;
+            case details?.canWithdraw && address === details?.owner:
+              return (
+                <Button
+                  className="w-full"
+                  isLoading={withdraw.isPending}
+                  onClick={() => withdraw.writeContractAsync()}
+                >
+                  Withdraw <TokenAmount amount={details.totalFundsRaised} />
+                </Button>
+              );
+            case details?.canRefund:
+              return (
+                <Button
+                  className="w-full"
+                  isLoading={refund.isPending}
+                  disabled={!contribution}
+                  onClick={() => refund.writeContractAsync()}
+                >
+                  Refund <TokenAmount amount={contribution} />
+                </Button>
+              );
+            case Date.now() < details?.fundingDeadline:
+              return (
+                <Button className="w-full" onClick={() => setIsOpen(!isOpen)}>
+                  Fund Project
+                </Button>
+              );
+            default:
+              return null;
+          }
+        })()}
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>Fund Project</DrawerTitle>
@@ -128,7 +170,6 @@ export function FundButton() {
                     <FormControl>
                       <div className="relative">
                         <Input
-                          autoFocus
                           type="tel"
                           placeholder="0"
                           {...field}
@@ -168,7 +209,9 @@ export function FundButton() {
                   <Button
                     className="flex-1"
                     type="submit"
-                    disabled={balance < amount}
+                    disabled={
+                      balance < amount || approve.isPending || fund.isPending
+                    }
                     isLoading={approve.isPending || fund.isPending}
                   >
                     {amount > allowance ? "Approve" : "Transfer"}{" "}

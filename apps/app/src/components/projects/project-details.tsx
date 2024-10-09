@@ -1,6 +1,6 @@
 "use client";
 
-import { BanknoteIcon, ClockIcon } from "lucide-react";
+import { BanknoteIcon, ClockIcon, QrCodeIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Markdown } from "~/components/ui/markdown";
 import { Meta } from "~/components/ui/meta";
@@ -12,7 +12,9 @@ import { Progress } from "~/components/ui/progress";
 import { TokenAmount } from "../token/token-amount";
 import { useParams } from "next/navigation";
 import { type Address } from "viem";
-import { Badge } from "../ui/badge";
+import { toNow } from "~/lib/format";
+import { ProjectBadge } from "./project-badge";
+import { Button } from "../ui/button";
 
 export function ProjectDetails({ action = null }: { action: ReactNode }) {
   const { projectAddress } = useParams();
@@ -25,7 +27,6 @@ export function ProjectDetails({ action = null }: { action: ReactNode }) {
   if (!details) return <div>Not found</div>;
 
   const progress = (details.totalFundsRaised / details.fundingTarget) * 100;
-
   return (
     <>
       <div className="flex items-center gap-1 bg-white py-2">
@@ -33,16 +34,22 @@ export function ProjectDetails({ action = null }: { action: ReactNode }) {
         <h1 className="flex-1 text-lg font-semibold sm:text-2xl md:text-3xl">
           {metadata?.title}
         </h1>
-        {details?.canRefund ? (
-          <Badge variant="destructive">Not funded</Badge>
-        ) : details?.canWithdraw ? (
-          <Badge variant="success">Funded</Badge>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <ProjectBadge projectAddress={projectAddress} />
+          <Button
+            icon={QrCodeIcon}
+            variant={"outline"}
+            size="sm"
+            className="rounded-full"
+          />
+        </div>
       </div>
       <div className="mb-4 flex flex-col gap-2 text-sm">
         <Meta icon={ClockIcon}>
           <div>
-            Funding until: {format(new Date(details.fundingDeadline), "PP")}
+            {/* {toNow(details.fundingDeadline, { addSuffix: false })} left to fund */}
+            Funding until:{" "}
+            {format(new Date(details.fundingDeadline), "PP HH:mm")}
           </div>
         </Meta>
         <Meta icon={BanknoteIcon}>

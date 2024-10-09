@@ -34,7 +34,7 @@ export function CreateProjectForm() {
       },
       minFundingAmount: 10, // Default minimum funding amount
       target: 1000, // Default target amount
-      deadline: new Date(Date.now() + 60 * 1000 * 2), // Default deadline set to 30 days in the future
+      deadline: new Date(Date.now() + 60 * 1000 * 5), // Default deadline set to 30 days in the future
     },
   });
   const router = useRouter();
@@ -64,7 +64,7 @@ export function CreateProjectForm() {
           return writeContractAsync({
             tokenAddress: balance?.address,
             metadata,
-            deadline: Number(values.deadline ?? 0),
+            deadline: Number(Math.floor(values.deadline / 1000) ?? 0),
             target,
             minFundingAmount,
           }).then((projectAddress) => {

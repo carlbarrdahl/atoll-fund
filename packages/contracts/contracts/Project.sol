@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import "hardhat/console.sol";
+
 contract Project is Ownable, Initializable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
@@ -79,6 +81,8 @@ contract Project is Ownable, Initializable, ReentrancyGuard {
      * @param _amount The amount of tokens to contribute.
      */
     function fund(uint256 _amount) external nonReentrant {
+        console.log(block.timestamp);
+        console.log(deadline);
         require(block.timestamp < deadline, "Funding period has ended");
         require(
             _amount >= minFundingAmount,
@@ -117,17 +121,27 @@ contract Project is Ownable, Initializable, ReentrancyGuard {
     function refund() external nonReentrant {
         require(block.timestamp >= deadline, "Cannot refund before deadline");
         require(totalRaised < target, "Funding target met, cannot refund");
+        require(msg.sender != owner(), "Owner cannot refund");
 
         uint256 contributedAmount = contributions[msg.sender];
+        uint256 ownerContribution = contributions[owner()];
+        uint256 contributionsTotal = totalRaised - ownerContribution;
+
         require(contributedAmount > 0, "No contributions to refund");
 
-        // Reset the contributor's balance
+        // Calculate the bonus
+        uint256 bonus = (ownerContribution * contributedAmount) /
+            contributionsTotal;
+
+        // Update contributions mapping
         contributions[msg.sender] = 0;
-        totalRaised -= contributedAmount;
+        contributions[owner()] -= bonus;
 
-        token.safeTransfer(msg.sender, contributedAmount);
+        uint256 refundAmount = contributedAmount + bonus;
 
-        emit Refunded(msg.sender, contributedAmount);
+        token.safeTransfer(msg.sender, refundAmount);
+
+        emit Refunded(msg.sender, refundAmount);
     }
 
     /**
@@ -150,7 +164,8 @@ contract Project is Ownable, Initializable, ReentrancyGuard {
             uint256 fundingTarget,
             uint256 minimumFundingAmount,
             bool isWithdrawn,
-            uint256 totalFundsRaised
+            uint256 totalFundsRaised,
+            address owner
         )
     {
         return (
@@ -160,7 +175,8 @@ contract Project is Ownable, Initializable, ReentrancyGuard {
             target,
             minFundingAmount,
             withdrawn,
-            totalRaised
+            totalRaised,
+            super.owner()
         );
     }
 }
@@ -177,9 +193,16 @@ contract ProjectFactory {
     // Event emitted when a new project is created
     event ProjectCreated(address indexed projectAddress, address indexed owner);
 
-    constructor() {
-        // Deploy the implementation contract
-        implementation = address(new Project());
+    /**
+     * @dev Constructor to set the implementation address.
+     * @param _implementation The address of the Project implementation contract.
+     */
+    constructor(address _implementation) {
+        require(
+            _implementation != address(0),
+            "Invalid implementation address"
+        );
+        implementation = _implementation;
     }
 
     /**

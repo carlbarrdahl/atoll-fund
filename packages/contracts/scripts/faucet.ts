@@ -6,7 +6,7 @@ async function main() {
   const [sender] = await hre.ethers.getSigners();
   try {
     await sender.sendTransaction({
-      to: getAddress("0xf66CcEDcD3f99C234cefA713Ab7399F5DD3a6770"),
+      to: getAddress("0x3432a8b457D335FfE32c9F7AF93732A0D9d263D6"),
       value: BigInt(10 ^ 18),
     });
   } catch (error) {

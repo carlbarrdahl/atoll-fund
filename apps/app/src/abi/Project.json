@@ -251,6 +251,11 @@
         "internalType": "uint256",
         "name": "totalFundsRaised",
         "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
