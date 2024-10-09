@@ -22,7 +22,6 @@ import { useToken } from "~/hooks/use-token";
 import { useUpload } from "~/hooks/use-upload";
 import { useCreateProject } from "~/hooks/use-create-project";
 import { CreateProjectSchema } from "~/schemas/event";
-import { useContracts } from "~/hooks/use-contracts";
 
 export function CreateProjectForm() {
   const form = useForm<z.infer<typeof CreateProjectSchema>>({

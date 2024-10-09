@@ -10,7 +10,8 @@ import { Web3Provider } from "./providers";
 import { Header } from "./header";
 export const metadata: Metadata = {
   title: "Atoll",
-  description: "...",
+  description:
+    "Atoll is a Kickstarter for pop-up cities and network states, enabling communities to collectively fund projects, events, and initiatives.",
   icons: [{ rel: "icon", url: "/favicon.svg" }],
 };
 

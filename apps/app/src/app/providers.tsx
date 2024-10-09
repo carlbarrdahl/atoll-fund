@@ -3,6 +3,7 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { baseSepolia, hardhat } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
+import { metadata } from "./layout";
 
 const config = createConfig(
   getDefaultConfig({
@@ -20,10 +21,10 @@ const config = createConfig(
     walletConnectProjectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID!,
 
     // Required App Info
-    appName: "Your App Name",
+    appName: metadata.title as string,
 
     // Optional App Info
-    appDescription: "Your App Description",
+    appDescription: metadata.description!,
     appUrl: "https://family.co", // your app's url
     appIcon: "https://family.co/logo.png", // your app's icon, no bigger than 1024x1024px (max. 1MB)
   }),
