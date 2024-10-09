@@ -27,15 +27,15 @@ import { useContracts } from "~/hooks/use-contracts";
 export function CreateProjectForm() {
   const form = useForm<z.infer<typeof CreateProjectSchema>>({
     resolver: zodResolver(CreateProjectSchema),
-    defaultValues: {
-      metadata: {
-        title: "Aerodrip bar",
-        description: `**Objective:**\nCreate and crowdfund a self-service coffee bar.`,
-      },
-      minFundingAmount: 10, // Default minimum funding amount
-      target: 1000, // Default target amount
-      deadline: new Date(Date.now() + 60 * 1000 * 5), // Default deadline set to 30 days in the future
-    },
+    // defaultValues: {
+    //   metadata: {
+    //     title: "Aerodrip bar",
+    //     description: `**Objective:**\nCreate and crowdfund a self-service coffee bar.`,
+    //   },
+    //   minFundingAmount: 10, // Default minimum funding amount
+    //   target: 1000, // Default target amount
+    //   deadline: new Date(Date.now() + 60 * 1000 * 5), // Default deadline set to 30 days in the future
+    // },
   });
   const router = useRouter();
   const { data: balance } = useToken();
