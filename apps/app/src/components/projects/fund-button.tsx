@@ -43,7 +43,6 @@ export function FundButton() {
   const [isOpen, setIsOpen] = useState(false);
   const form = useForm({
     resolver: zodResolver(FundSchema),
-    defaultValues: { amount: 0 },
   });
 
   const { projectAddress } = useParams();
@@ -81,6 +80,7 @@ export function FundButton() {
   );
   const approve = useApprove(projectAddr);
 
+  const minFundingAmount = details?.minimumFundingAmount ?? 0n;
   const _amount = form.watch("amount");
   const amount = useMemo(() => {
     try {
@@ -93,6 +93,7 @@ export function FundButton() {
 
   const balance = token?.value ?? 0;
 
+  console.log({ _amount }, typeof _amount);
   const handleSubmit = form.handleSubmit((values) => {
     const amount = parseUnits(String(values.amount), token?.decimals ?? 18);
     if (amount > allowance) {
@@ -104,16 +105,8 @@ export function FundButton() {
   });
 
   useEffect(() => {
-    if (token && details && !_amount) {
-      console.log(
-        "min amount",
-        details.minimumFundingAmount,
-        formatUnits(details.minimumFundingAmount, token.decimals),
-      );
-      form.setValue(
-        "amount",
-        formatUnits(details.minimumFundingAmount, token.decimals),
-      );
+    if (token && details && typeof _amount === "undefined") {
+      form.setValue("amount", formatUnits(minFundingAmount, token.decimals));
     }
   }, [details, token, form, _amount]);
 
@@ -182,15 +175,22 @@ export function FundButton() {
                           {token?.symbol}
                         </div>
 
-                        <div
-                          className={cn(
-                            "pt-0.5 text-right text-xs text-gray-500",
-                            {
+                        <div className="flex justify-between pt-0.5 text-xs text-gray-500">
+                          <div
+                            className={cn({
+                              ["text-red-500"]: amount < minFundingAmount,
+                            })}
+                          >
+                            Min funding:{" "}
+                            <TokenAmount amount={minFundingAmount} />
+                          </div>
+                          <div
+                            className={cn({
                               ["text-red-500"]: balance < amount,
-                            },
-                          )}
-                        >
-                          Balance: <TokenAmount amount={balance} />
+                            })}
+                          >
+                            Balance: <TokenAmount amount={balance} />
+                          </div>
                         </div>
                       </div>
                     </FormControl>
@@ -210,7 +210,10 @@ export function FundButton() {
                     className="flex-1"
                     type="submit"
                     disabled={
-                      balance < amount || approve.isPending || fund.isPending
+                      balance < amount ||
+                      amount < minFundingAmount ||
+                      approve.isPending ||
+                      fund.isPending
                     }
                     isLoading={approve.isPending || fund.isPending}
                   >

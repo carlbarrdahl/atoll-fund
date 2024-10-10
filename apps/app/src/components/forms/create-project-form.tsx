@@ -122,8 +122,6 @@ export function CreateProjectForm() {
                 <FormControl>
                   <div className="relative">
                     <Input
-                      min={1}
-                      type="number"
                       placeholder="0"
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}
@@ -146,8 +144,6 @@ export function CreateProjectForm() {
                 <FormControl>
                   <div className="relative">
                     <Input
-                      min={1}
-                      type="number"
                       placeholder="0"
                       {...field}
                       onChange={(e) => field.onChange(Number(e.target.value))}

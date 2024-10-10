@@ -6,6 +6,8 @@ import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Terminal } from "lucide-react";
 import { Markdown } from "~/components/ui/markdown";
 
+import { QRCodeSVG } from "qrcode.react";
+
 export default async function Home() {
   return (
     <HydrateClient>

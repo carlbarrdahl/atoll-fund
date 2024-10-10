@@ -22,13 +22,13 @@ type Event = {
 };
 
 export function useProjects() {
-  const { projectAddress } = useParams();
   const contracts = useContracts();
+  const factoryAddress = contracts?.factory as Address;
   return useReadContract({
-    address: contracts?.factory as Address,
+    address: factoryAddress,
     abi,
     functionName: "getAllProjects",
     args: [],
-    // query: { enabled: Boolean(projectAddress) },
+    query: { enabled: Boolean(factoryAddress) },
   });
 }
