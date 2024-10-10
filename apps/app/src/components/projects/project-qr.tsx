@@ -1,19 +1,17 @@
 "use client";
 
-import { QrCodeIcon } from "lucide-react";
-import { Markdown } from "~/components/ui/markdown";
-import { type ReactNode } from "react";
-import { FundButton } from "./fund-button";
-import { useProjectDetails } from "~/hooks/use-project-details";
-import { useMetadata } from "~/hooks/use-metadata";
 import { useParams } from "next/navigation";
 import { type Address } from "viem";
+import { QRCodeSVG } from "qrcode.react";
+import { Markdown } from "~/components/ui/markdown";
+import { type ReactNode } from "react";
+import { useProjectDetails } from "~/hooks/use-project-details";
+import { useMetadata } from "~/hooks/use-metadata";
 import { ProjectBadge } from "./project-badge";
-import { Button } from "../ui/button";
-import Link from "next/link";
+import { getBaseUrl } from "~/trpc/react";
 import { ProjectMeta } from "./project-meta";
 
-export function ProjectDetails({ action = null }: { action: ReactNode }) {
+export function ProjectQR({ action = null }: { action: ReactNode }) {
   const { projectAddress } = useParams();
   const { data: details, isPending } = useProjectDetails(
     projectAddress as Address,
@@ -23,6 +21,11 @@ export function ProjectDetails({ action = null }: { action: ReactNode }) {
   if (isPending) return <div className="h-64 animate-pulse bg-gray-100"></div>;
   if (!details) return <div>Not found</div>;
 
+  const projectUrl = new URL(
+    `/projects/${projectAddress}`,
+    getBaseUrl(),
+  ).toString();
+  const progress = (details.totalFundsRaised / details.fundingTarget) * 100;
   return (
     <>
       <div className="flex items-center gap-1 bg-white py-2">
@@ -32,24 +35,16 @@ export function ProjectDetails({ action = null }: { action: ReactNode }) {
         </h1>
         <div className="flex items-center gap-2">
           <ProjectBadge projectAddress={projectAddress} />
-          <Link href={`/projects/${projectAddress}/qr`}>
-            <Button
-              icon={QrCodeIcon}
-              variant={"ghost"}
-              size="icon"
-              className="rounded-full"
-            />
-          </Link>
         </div>
       </div>
-
       <ProjectMeta details={details} />
+      <div className="max-w-full">
+        <QRCodeSVG className="w-full" size={300} value={projectUrl} />
+      </div>
 
       <div className="flex h-full flex-1 flex-col">
         <Markdown>{metadata?.description}</Markdown>
       </div>
-
-      <FundButton />
     </>
   );
 }

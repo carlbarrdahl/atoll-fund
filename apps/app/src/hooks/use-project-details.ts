@@ -3,7 +3,7 @@ import { useAccount, useReadContract } from "wagmi";
 
 import ProjectABI from "~/abi/Project.json";
 
-interface ProjectDetails {
+export interface ProjectDetails {
   owner: Address;
   tokenAddress: string;
   projectMetadata: string;
