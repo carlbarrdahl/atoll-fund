@@ -26,15 +26,15 @@ import { CreateProjectSchema } from "~/schemas/event";
 export function CreateProjectForm() {
   const form = useForm<z.infer<typeof CreateProjectSchema>>({
     resolver: zodResolver(CreateProjectSchema),
-    // defaultValues: {
-    //   metadata: {
-    //     title: "Aerodrip bar",
-    //     description: `**Objective:**\nCreate and crowdfund a self-service coffee bar.`,
-    //   },
-    //   minFundingAmount: 10, // Default minimum funding amount
-    //   target: 1000, // Default target amount
-    //   deadline: new Date(Date.now() + 60 * 1000 * 5), // Default deadline set to 30 days in the future
-    // },
+    defaultValues: {
+      metadata: {
+        title: "Aerodrip bar",
+        description: `**Objective:**\nCreate and crowdfund a self-service coffee bar.`,
+      },
+      minFundingAmount: 10, // Default minimum funding amount
+      target: 1000, // Default target amount
+      deadline: new Date(Date.now() + 60 * 1000 * 5), // Default deadline set to 30 days in the future
+    },
   });
   const router = useRouter();
   const { data: balance } = useToken();
@@ -63,7 +63,7 @@ export function CreateProjectForm() {
           return writeContractAsync({
             tokenAddress: balance?.address,
             metadata,
-            deadline: Number(Math.floor(values.deadline / 1000) ?? 0),
+            deadline: Math.floor(values.deadline.getTime() / 1000),
             target,
             minFundingAmount,
           }).then((projectAddress) => {
@@ -158,6 +158,7 @@ export function CreateProjectForm() {
             )}
           />
         </div>
+
         <FormField
           control={form.control}
           name="deadline"

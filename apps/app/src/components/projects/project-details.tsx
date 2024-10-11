@@ -12,6 +12,7 @@ import { ProjectBadge } from "./project-badge";
 import { Button } from "../ui/button";
 import Link from "next/link";
 import { ProjectMeta } from "./project-meta";
+import { Badge } from "../ui/badge";
 
 export function ProjectDetails({ action = null }: { action: ReactNode }) {
   const { projectAddress } = useParams();
@@ -22,7 +23,7 @@ export function ProjectDetails({ action = null }: { action: ReactNode }) {
 
   if (isPending) return <div className="h-64 animate-pulse bg-gray-100"></div>;
   if (!details) return <div>Not found</div>;
-
+  console.log(details);
   return (
     <>
       <div className="flex items-center gap-1 bg-white py-2">
@@ -42,7 +43,6 @@ export function ProjectDetails({ action = null }: { action: ReactNode }) {
           </Link>
         </div>
       </div>
-
       <ProjectMeta details={details} />
 
       <div className="flex h-full flex-1 flex-col">

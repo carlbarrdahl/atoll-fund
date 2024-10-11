@@ -1,6 +1,6 @@
 "use client";
 
-import { BanknoteIcon, ClockIcon } from "lucide-react";
+import { BanknoteIcon, ClockIcon, UserIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Meta } from "~/components/ui/meta";
 import { type ProjectDetails } from "~/hooks/use-project-details";
@@ -25,7 +25,7 @@ export function ProjectMeta({ details }: { details: ProjectDetails }) {
           / <TokenAmount amount={details.fundingTarget} />
         </div>
       </Meta>
-      <Progress value={progress} />
+      <Progress variant="success" value={progress} />
     </div>
   );
 }

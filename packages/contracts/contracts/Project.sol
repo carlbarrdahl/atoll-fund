@@ -7,44 +7,87 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "hardhat/console.sol";
-
+/**
+ * @title Project
+ * @dev A crowdfunding project contract that allows contributors to fund projects with ERC20 tokens.
+ */
 contract Project is Ownable, Initializable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    // The ERC20 token used for funding (e.g., USDC)
+    /// @notice The ERC20 token used for funding (e.g., USDC)
     IERC20 public token;
 
-    // Project metadata (e.g., IPFS hash or URL)
+    /// @notice Project metadata (e.g., IPFS hash or URL)
     string public metadata;
-    // Timestamp when the funding period ends
+
+    /// @notice Timestamp when the funding period ends
     uint256 public deadline;
-    // Funding goal amount
+
+    /// @notice Funding goal amount
     uint256 public target;
-    // Minimum funding amount per contribution
+
+    /// @notice Minimum funding amount per contribution
     uint256 public minFundingAmount;
-    // Flag indicating if funds have been withdrawn
+
+    /// @notice Maximum possible funding target
+    uint256 public maxFundingAmount;
+
+    /// @notice Minimum duration for a project (e.g., 1 hour)
+    uint256 public minDuration;
+
+    /// @notice Maximum duration for a project (e.g., 365 days)
+    uint256 public maxDuration;
+
+    /// @notice Flag indicating if funds have been withdrawn
     bool public withdrawn;
-    // Total amount of funds raised
+
+    /// @notice Total amount of funds raised
     uint256 public totalRaised;
-    // Mapping of contributor address to their contribution amount
+
+    /// @notice Mapping of contributor address to their contribution amount
     mapping(address => uint256) public contributions;
 
-    // Events for logging activities
+    // Events
+    /// @notice Emitted when the project is initialized
+    event ProjectInitialized(
+        address indexed projectAddress,
+        address indexed owner,
+        address indexed token,
+        string metadata,
+        uint256 deadline,
+        uint256 target,
+        uint256 minFundingAmount,
+        uint256 maxFundingAmount,
+        uint256 minDuration,
+        uint256 maxDuration
+    );
+
+    /// @notice Emitted when a contribution is made
     event Funded(address indexed funder, uint256 amount);
+
+    /// @notice Emitted when funds are withdrawn by the project owner
     event Withdrawn(address indexed owner, uint256 amount);
-    event Refunded(address indexed funder, uint256 amount);
+
+    /// @notice Emitted when a contributor receives a refund
+    event Refunded(
+        address indexed funder,
+        uint256 contributionAmount,
+        uint256 bonusAmount
+    );
 
     constructor() Ownable(msg.sender) {}
 
     /**
-     * @dev Initialize function to set up the Project contract.
-     * @param _token The ERC20 token used for funding (e.g., USDC).
-     * @param _owner The address of the project owner.
-     * @param _metadata A string containing project metadata.
-     * @param _deadline A future timestamp indicating the funding deadline.
-     * @param _target The funding goal amount.
-     * @param _minFundingAmount The minimum amount per contribution.
+     * @dev Initializes the Project contract with the specified parameters.
+     * @param _token The ERC20 token used for funding
+     * @param _owner The address of the project owner
+     * @param _metadata Project metadata (IPFS hash or URL)
+     * @param _deadline Funding period end timestamp
+     * @param _target Funding goal amount
+     * @param _minFundingAmount Minimum contribution amount
+     * @param _maxFundingAmount Maximum possible funding target
+     * @param _minDuration Minimum duration for the project in seconds
+     * @param _maxDuration Maximum duration for the project in seconds
      */
     function initialize(
         IERC20 _token,
@@ -52,10 +95,27 @@ contract Project is Ownable, Initializable, ReentrancyGuard {
         string memory _metadata,
         uint256 _deadline,
         uint256 _target,
-        uint256 _minFundingAmount
+        uint256 _minFundingAmount,
+        uint256 _maxFundingAmount,
+        uint256 _minDuration,
+        uint256 _maxDuration
     ) external initializer {
-        require(_deadline > block.timestamp, "Deadline must be in the future");
-        require(_target > 0, "Target must be greater than zero");
+        require(_minDuration > 0, "Min duration must be greater than zero");
+        require(
+            _maxDuration > _minDuration,
+            "Max duration must be greater than min duration"
+        );
+        require(
+            _deadline >= block.timestamp + _minDuration,
+            "Deadline too soon"
+        );
+        require(
+            _deadline <= block.timestamp + _maxDuration,
+            "Deadline too far"
+        );
+        require(_target <= _maxFundingAmount, "Target above max funding");
+        require(_target > _minFundingAmount, "Target below min funding");
+        require(bytes(_metadata).length > 0, "Empty metadata");
         require(
             _minFundingAmount > 0,
             "Min funding amount must be greater than zero"
@@ -64,16 +124,30 @@ contract Project is Ownable, Initializable, ReentrancyGuard {
         require(address(_token) != address(0), "Invalid token address");
 
         token = _token;
-
         _transferOwnership(_owner);
 
-        // Initialize project parameters
         metadata = _metadata;
         deadline = _deadline;
         target = _target;
         minFundingAmount = _minFundingAmount;
+        maxFundingAmount = _maxFundingAmount;
+        minDuration = _minDuration;
+        maxDuration = _maxDuration;
         withdrawn = false;
         totalRaised = 0;
+
+        emit ProjectInitialized(
+            address(this),
+            _owner,
+            address(_token),
+            _metadata,
+            _deadline,
+            _target,
+            _minFundingAmount,
+            _maxFundingAmount,
+            _minDuration,
+            _maxDuration
+        );
     }
 
     /**
@@ -81,8 +155,6 @@ contract Project is Ownable, Initializable, ReentrancyGuard {
      * @param _amount The amount of tokens to contribute.
      */
     function fund(uint256 _amount) external nonReentrant {
-        console.log(block.timestamp);
-        console.log(deadline);
         require(block.timestamp < deadline, "Funding period has ended");
         require(
             _amount >= minFundingAmount,
@@ -128,31 +200,49 @@ contract Project is Ownable, Initializable, ReentrancyGuard {
         uint256 contributionsTotal = totalRaised - ownerContribution;
 
         require(contributedAmount > 0, "No contributions to refund");
+        require(contributionsTotal > 0, "No contributions to calculate bonus");
 
         // Calculate the bonus
-        uint256 bonus = (ownerContribution * contributedAmount) /
-            contributionsTotal;
+        uint256 bonus = 0;
+        if (ownerContribution > 0) {
+            bonus =
+                (ownerContribution * contributedAmount) /
+                contributionsTotal;
+        }
 
-        // Update contributions mapping
+        // Update contributions mapping before transfer
         contributions[msg.sender] = 0;
-        contributions[owner()] -= bonus;
+        if (bonus > 0) {
+            require(
+                contributions[owner()] >= bonus,
+                "Insufficient owner contribution"
+            );
+            contributions[owner()] -= bonus;
+        }
 
         uint256 refundAmount = contributedAmount + bonus;
-
+        require(
+            token.balanceOf(address(this)) >= refundAmount,
+            "Insufficient contract balance"
+        );
         token.safeTransfer(msg.sender, refundAmount);
 
-        emit Refunded(msg.sender, refundAmount);
+        emit Refunded(msg.sender, refundAmount, bonus);
     }
 
     /**
-     * @dev Function to get the project details.
-     * @return tokenAddress The address of the ERC20 token used for funding.
-     * @return projectMetadata The metadata of the project.
-     * @return fundingDeadline The timestamp when the funding period ends.
-     * @return fundingTarget The funding goal amount.
-     * @return minimumFundingAmount The minimum funding amount per contribution.
-     * @return isWithdrawn Flag indicating if funds have been withdrawn.
-     * @return totalFundsRaised The total amount of funds raised.
+     * @dev Returns all project details
+     * @return tokenAddress The address of the funding token
+     * @return projectMetadata The project metadata
+     * @return fundingDeadline The funding deadline timestamp
+     * @return fundingTarget The funding goal amount
+     * @return minimumFunding The minimum contribution amount
+     * @return maximumFunding The maximum possible funding target
+     * @return projectMinDuration The minimum project duration
+     * @return projectMaxDuration The maximum project duration
+     * @return isWithdrawn Whether funds have been withdrawn
+     * @return totalFundsRaised Total amount raised
+     * @return projectOwner The project owner address
      */
     function getProjectDetails()
         external
@@ -162,10 +252,13 @@ contract Project is Ownable, Initializable, ReentrancyGuard {
             string memory projectMetadata,
             uint256 fundingDeadline,
             uint256 fundingTarget,
-            uint256 minimumFundingAmount,
+            uint256 minimumFunding,
+            uint256 maximumFunding,
+            uint256 projectMinDuration,
+            uint256 projectMaxDuration,
             bool isWithdrawn,
             uint256 totalFundsRaised,
-            address owner
+            address projectOwner
         )
     {
         return (
@@ -174,29 +267,46 @@ contract Project is Ownable, Initializable, ReentrancyGuard {
             deadline,
             target,
             minFundingAmount,
+            maxFundingAmount,
+            minDuration,
+            maxDuration,
             withdrawn,
             totalRaised,
-            super.owner()
+            owner()
         );
     }
 }
 
+/**
+ * @title ProjectFactory
+ * @dev Factory contract for creating new Project instances using the minimal proxy pattern
+ */
 contract ProjectFactory {
     using Clones for address;
 
-    // Address of the Project implementation contract
+    /// @notice The address of the Project implementation contract
     address public immutable implementation;
 
-    // Array to keep track of all deployed project addresses
-    address[] public allProjects;
+    /// @notice Default minimum duration for projects (1 hour)
+    uint256 public constant DEFAULT_MIN_DURATION = 1 hours;
 
-    // Event emitted when a new project is created
-    event ProjectCreated(address indexed projectAddress, address indexed owner);
+    /// @notice Default maximum duration for projects (365 days)
+    uint256 public constant DEFAULT_MAX_DURATION = 365 days;
 
-    /**
-     * @dev Constructor to set the implementation address.
-     * @param _implementation The address of the Project implementation contract.
-     */
+    /// @notice Emitted when a new project is created
+    event ProjectCreated(
+        address indexed projectAddress,
+        address indexed owner,
+        address indexed token,
+        string metadata,
+        uint256 deadline,
+        uint256 target,
+        uint256 minFundingAmount,
+        uint256 maxFundingAmount,
+        uint256 minDuration,
+        uint256 maxDuration
+    );
+
     constructor(address _implementation) {
         require(
             _implementation != address(0),
@@ -206,46 +316,62 @@ contract ProjectFactory {
     }
 
     /**
-     * @dev Function to create a new project clone.
-     * @param _token The ERC20 token used for funding.
-     * @param _metadata A string containing project metadata.
-     * @param _deadline A future timestamp indicating the funding deadline.
-     * @param _target The funding goal amount.
-     * @param _minFundingAmount The minimum amount per contribution.
+     * @dev Creates a new project clone
+     * @param _token The ERC20 token used for funding
+     * @param _metadata Project metadata
+     * @param _deadline Funding period end timestamp
+     * @param _target Funding goal amount
+     * @param _minFundingAmount Minimum contribution amount
+     * @param _minDuration Optional minimum duration for the project (defaults to 1 hour)
+     * @param _maxDuration Optional maximum duration for the project (defaults to 365 days)
+     * @return clone Address of the newly created project
      */
     function createProject(
         IERC20 _token,
         string memory _metadata,
         uint256 _deadline,
         uint256 _target,
-        uint256 _minFundingAmount
-    ) external returns (address) {
-        // Clone the Project implementation contract
-        address clone = Clones.clone(implementation);
+        uint256 _minFundingAmount,
+        uint256 _minDuration,
+        uint256 _maxDuration
+    ) external returns (address clone) {
+        // Use default durations if 0 is provided
+        uint256 minDuration = _minDuration == 0
+            ? DEFAULT_MIN_DURATION
+            : _minDuration;
+        uint256 maxDuration = _maxDuration == 0
+            ? DEFAULT_MAX_DURATION
+            : _maxDuration;
 
-        // Initialize the clone with project configuration
+        uint256 maxFundingAmount = type(uint96).max;
+
+        clone = Clones.clone(implementation);
+
         Project(clone).initialize(
             _token,
             msg.sender,
             _metadata,
             _deadline,
             _target,
-            _minFundingAmount
+            _minFundingAmount,
+            maxFundingAmount,
+            minDuration,
+            maxDuration
         );
 
-        // Add the new project to the list
-        allProjects.push(clone);
-
-        emit ProjectCreated(clone, msg.sender);
+        emit ProjectCreated(
+            clone,
+            msg.sender,
+            address(_token),
+            _metadata,
+            _deadline,
+            _target,
+            _minFundingAmount,
+            maxFundingAmount,
+            minDuration,
+            maxDuration
+        );
 
         return clone;
-    }
-
-    /**
-     * @dev Function to get all deployed projects.
-     * @return An array of project addresses.
-     */
-    function getAllProjects() external view returns (address[] memory) {
-        return allProjects;
     }
 }

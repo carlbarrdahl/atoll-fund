@@ -16,6 +16,7 @@ import { Button } from "../ui/button";
 export function ProjectsList() {
   const { data: projects, isPending, error } = useProjects();
 
+  console.log(projects);
   return (
     <>
       <div className="flex flex-1 flex-col space-y-2">
@@ -27,11 +28,11 @@ export function ProjectsList() {
           projects?.map((project) => {
             return (
               <Link
-                key={project}
+                key={project.projectAddress}
                 className="relative flex items-center rounded-md border-b p-2"
-                href={`/projects/${project}`}
+                href={`/projects/${project.projectAddress}`}
               >
-                <Project address={project} />
+                <Project address={project.projectAddress} />
               </Link>
             );
           })

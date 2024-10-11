@@ -13,14 +13,13 @@ export function ProjectBadge({ projectAddress }: { projectAddress: Address }) {
         <span className="opacity-0">loading</span>
       </Badge>
     );
-  console.log(
-    data.fundingDeadline,
-    Date.now(),
-    "funding done:",
-    data.fundingDeadline < Date.now(),
-  );
+
   if (data.fundingDeadline < Date.now())
-    return <Badge variant="secondary">Finished</Badge>;
+    return data.totalFundsRaised >= data.fundingTarget ? (
+      <Badge variant="success">Succeeded</Badge>
+    ) : (
+      <Badge variant="secondary">Finished</Badge>
+    );
   if (data.isWithdrawn) return <Badge variant="success">Withdrawn</Badge>;
   if (data.canRefund) return <Badge variant="destructive">Not funded</Badge>;
   if (data.canWithdraw) return <Badge variant="success">Funded</Badge>;

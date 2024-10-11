@@ -10,6 +10,9 @@ export interface ProjectDetails {
   fundingDeadline: number;
   fundingTarget: number;
   minimumFundingAmount: number;
+  maximumFundingAmount: number;
+  minDuration: number;
+  maxDuration: number;
   isWithdrawn: boolean;
   totalFundsRaised: number;
   canRefund: boolean;
@@ -43,14 +46,16 @@ function getProjectDetails(
   const fundingDeadline = Number(data[2]) * 1000;
   const fundingTarget = Number(data[3]);
   const minimumFundingAmount = Number(data[4]);
-  const isWithdrawn = Boolean(data[5]);
-  const totalFundsRaised = Number(data[6]);
-  const owner = getAddress(data[7] as string);
+  const maximumFundingAmount = Number(data[5]);
+  const minDuration = Number(data[6]);
+  const maxDuration = Number(data[7]);
+  const isWithdrawn = Boolean(data[8]);
+  const totalFundsRaised = Number(data[9]);
+  const owner = getAddress(data[10] as string);
 
   const canRefund =
-    Date.now() >= fundingDeadline &&
-    totalFundsRaised < fundingTarget &&
-    owner !== account;
+    Date.now() >= fundingDeadline && totalFundsRaised < fundingTarget;
+  //  && owner !== account;
 
   const canWithdraw =
     Date.now() >= fundingDeadline &&
@@ -63,6 +68,9 @@ function getProjectDetails(
     fundingDeadline,
     fundingTarget,
     minimumFundingAmount,
+    maximumFundingAmount,
+    minDuration,
+    maxDuration,
     isWithdrawn,
     totalFundsRaised,
     canRefund,

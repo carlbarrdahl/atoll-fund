@@ -1,4 +1,3 @@
-import { useParams } from "next/navigation";
 import { getAddress } from "viem";
 import { useWriteContract } from "wagmi";
 
@@ -7,11 +6,23 @@ import { useToast } from "./use-toast";
 import { useWaitForEvent } from "./use-wait-for-event";
 import { useContracts } from "./use-contracts";
 
+interface CreateProjectArgs {
+  tokenAddress: string;
+  metadata: string;
+  deadline: number;
+  target: bigint;
+  minFundingAmount: bigint;
+  maxFundingAmount: bigint;
+  minDuration: number;
+  maxDuration: number;
+}
+
 export function useCreateProject() {
   const { toast } = useToast();
   const contracts = useContracts();
   const waitForEvent = useWaitForEvent(ProjectFactoryABI);
   const { writeContractAsync, ...query } = useWriteContract();
+
   return {
     ...query,
     writeContractAsync: ({
@@ -20,8 +31,9 @@ export function useCreateProject() {
       deadline = 0,
       target = 0n,
       minFundingAmount = 0n,
-    }) => {
-      console.log({ deadline });
+      minDuration = 60, // Default to 1 hour
+      maxDuration = 31536000, // Default to 365 days
+    }: Partial<CreateProjectArgs>) => {
       return writeContractAsync(
         {
           address: getAddress(contracts?.factory as string),
@@ -33,6 +45,8 @@ export function useCreateProject() {
             deadline,
             target,
             minFundingAmount,
+            minDuration,
+            maxDuration,
           ],
         },
         {
@@ -46,7 +60,7 @@ export function useCreateProject() {
         },
       )
         .then((hash) => waitForEvent(hash, "ProjectCreated"))
-        .then(([{ args }]) => args.projectAddress);
+        .then(([{ args }]) => args?.projectAddress);
     },
   };
 }
