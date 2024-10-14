@@ -1,0 +1,16 @@
+type ProjectCreated @entity(immutable: true) {
+  id: Bytes!
+  projectAddress: Bytes! # address
+  owner: Bytes! # address
+  token: Bytes! # address
+  metadata: String! # string
+  deadline: BigInt! # uint256
+  target: BigInt! # uint256
+  minFundingAmount: BigInt! # uint256
+  maxFundingAmount: BigInt! # uint256
+  minDuration: BigInt! # uint256
+  maxDuration: BigInt! # uint256
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

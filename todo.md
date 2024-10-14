@@ -10,6 +10,7 @@ Mutual Assurance contract like Kickstarter but for project.
 ### TODO
 
 - [ ] Indexer
+- [ ] Update metadata
 - [ ] Test refund + withdraw from frontend
 - [ ] Deploy to Base
 - [ ] Audit
