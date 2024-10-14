@@ -1,6 +1,6 @@
 import { getAddress, type Address } from "viem";
 import { useAccount, useReadContract } from "wagmi";
-
+import { createPublicClient } from "viem";
 import ProjectABI from "~/abi/Project.json";
 
 export interface ProjectDetails {
@@ -35,9 +35,9 @@ export function useProjectDetails(projectAddress?: Address) {
   };
 }
 
-function getProjectDetails(
+export function getProjectDetails(
   data: unknown,
-  account: Address,
+  account?: Address,
 ): ProjectDetails | null {
   if (!data || !Array.isArray(data)) return null;
 

@@ -10,6 +10,7 @@ import { TokenAmount } from "../token/token-amount";
 export function ProjectMeta({ details }: { details: ProjectDetails }) {
   const progress = (details.totalFundsRaised / details.fundingTarget) * 100;
 
+  console.log(details, progress);
   return (
     <div className="mb-4 flex flex-col gap-2 text-sm">
       <Meta icon={ClockIcon}>

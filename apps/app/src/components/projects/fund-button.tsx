@@ -93,7 +93,6 @@ export function FundButton() {
 
   const balance = token?.value ?? 0;
 
-  console.log({ _amount }, typeof _amount);
   const handleSubmit = form.handleSubmit((values) => {
     const amount = parseUnits(String(values.amount), token?.decimals ?? 18);
     if (amount > allowance) {
