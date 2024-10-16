@@ -1,14 +1,14 @@
 "use client";
 
-import { BanknoteIcon, ClockIcon, UserIcon } from "lucide-react";
+import { BanknoteIcon, ClockIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Meta } from "~/components/ui/meta";
-import { type ProjectDetails } from "~/hooks/use-project-details";
 import { Progress } from "~/components/ui/progress";
 import { TokenAmount } from "../token/token-amount";
+import { type Project } from "~/hooks/use-projects";
 
-export function ProjectMeta({ details }: { details: ProjectDetails }) {
-  const progress = (details.totalFundsRaised / details.fundingTarget) * 100;
+export function ProjectMeta({ details }: { details: Project }) {
+  const progress = (details.totalRaised / details.target) * 100;
 
   console.log(details, progress);
   return (
@@ -16,14 +16,14 @@ export function ProjectMeta({ details }: { details: ProjectDetails }) {
       <Meta icon={ClockIcon}>
         <div>
           {/* {toNow(details.fundingDeadline, { addSuffix: false })} left to fund */}
-          Funding until: {format(new Date(details.fundingDeadline), "PP HH:mm")}
+          Funding until: {format(new Date(details.deadline), "PP HH:mm")}
         </div>
       </Meta>
       <Meta icon={BanknoteIcon}>
         <div className="flex gap-1">
           <span>Raised: </span>
-          <TokenAmount amount={details.totalFundsRaised} hideSymbol />
-          / <TokenAmount amount={details.fundingTarget} />
+          <TokenAmount amount={details.totalRaised} hideSymbol />
+          / <TokenAmount amount={details.target} />
         </div>
       </Meta>
       <Progress variant="success" value={progress} />

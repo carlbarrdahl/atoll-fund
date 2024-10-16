@@ -3,7 +3,7 @@ import { Meta } from "../ui/meta";
 import { BanknoteIcon, ClockIcon, PlusIcon } from "lucide-react";
 import { type Address } from "viem";
 import Link from "next/link";
-import { useProjects } from "~/hooks/use-projects";
+import { Project, useProjects } from "~/hooks/use-projects";
 import { format } from "date-fns";
 import { useProjectDetails } from "~/hooks/use-project-details";
 import { useMetadata } from "~/hooks/use-metadata";
@@ -28,11 +28,11 @@ export function ProjectsList() {
           projects?.map((project) => {
             return (
               <Link
-                key={project.projectAddress}
+                key={project.id}
                 className="relative flex items-center rounded-md border-b p-2"
-                href={`/projects/${project.projectAddress}`}
+                href={`/projects/${project.id}`}
               >
-                <Project address={project.projectAddress} />
+                <Project {...project} />
               </Link>
             );
           })
@@ -54,33 +54,28 @@ export function ProjectsList() {
   );
 }
 
-function Project({ address }: { address: Address }) {
-  const { data } = useProjectDetails(address);
-  const { data: metadata } = useMetadata(data?.projectMetadata);
-  if (!data) return <div>...</div>;
+function Project({ id, target, deadline, metadata, totalRaised }: Project) {
+  const { data: _metadata } = useMetadata(metadata);
+  if (!id) return <div>...</div>;
   return (
     <div className="mb-2 flex-1">
       <div className="flex items-center justify-between">
-        <h2 className="mb-1 text-base font-bold">{metadata?.title}</h2>
-        <ProjectBadge projectAddress={address} />
+        <h2 className="mb-1 text-base font-bold">{_metadata?.title}</h2>
+        <ProjectBadge id={id} />
       </div>
       <div className="mb-2 flex gap-4 text-xs">
         <Meta icon={BanknoteIcon}>
           <div>
-            <TokenAmount amount={data.totalFundsRaised} hideSymbol /> /{" "}
-            <TokenAmount amount={data.fundingTarget} />
+            <TokenAmount amount={totalRaised} hideSymbol /> /{" "}
+            <TokenAmount amount={target} />
           </div>
         </Meta>
         <Meta icon={ClockIcon}>
-          <div>
-            {data.fundingDeadline
-              ? format(Number(data.fundingDeadline), "PP")
-              : "N/A"}
-          </div>
+          <div>{deadline ? format(Number(deadline), "PP") : "N/A"}</div>
         </Meta>
       </div>
       <p className="text-sm">
-        {truncate(stripMarkdown(metadata?.description), 120)}
+        {truncate(stripMarkdown(_metadata?.description), 120)}
       </p>
     </div>
   );

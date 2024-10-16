@@ -3,8 +3,8 @@ import { type Address } from "viem";
 import { useProjectDetails } from "~/hooks/use-project-details";
 import { Badge } from "../ui/badge";
 
-export function ProjectBadge({ projectAddress }: { projectAddress: Address }) {
-  const { data, isPending } = useProjectDetails(projectAddress as Address);
+export function ProjectBadge({ id }: { id: Address }) {
+  const { data, isPending } = useProjectDetails(id);
 
   if (!data) return null;
   if (isPending)
@@ -13,7 +13,6 @@ export function ProjectBadge({ projectAddress }: { projectAddress: Address }) {
         <span className="opacity-0">loading</span>
       </Badge>
     );
-
   if (data.fundingDeadline < Date.now())
     return data.totalFundsRaised >= data.fundingTarget ? (
       <Badge variant="success">Succeeded</Badge>

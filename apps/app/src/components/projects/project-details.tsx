@@ -13,13 +13,12 @@ import { Button } from "../ui/button";
 import Link from "next/link";
 import { ProjectMeta } from "./project-meta";
 import { Badge } from "../ui/badge";
+import { useProjectById } from "~/hooks/use-projects";
 
 export function ProjectDetails({ action = null }: { action: ReactNode }) {
   const { projectAddress } = useParams();
-  const { data: details, isPending } = useProjectDetails(
-    projectAddress as Address,
-  );
-  const { data: metadata } = useMetadata(details?.projectMetadata);
+  const { data: details, isPending } = useProjectById(projectAddress);
+  const { data: metadata } = useMetadata(details?.metadata);
 
   if (isPending) return <div className="h-64 animate-pulse bg-gray-100"></div>;
   if (!details) return <div>Not found</div>;
@@ -32,7 +31,7 @@ export function ProjectDetails({ action = null }: { action: ReactNode }) {
           {metadata?.title}
         </h1>
         <div className="flex items-center gap-2">
-          <ProjectBadge projectAddress={projectAddress} />
+          <ProjectBadge id={projectAddress} />
           <Link href={`/projects/${projectAddress}/qr`}>
             <Button
               icon={QrCodeIcon}

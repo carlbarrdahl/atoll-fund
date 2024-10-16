@@ -1,0 +1,23 @@
+type Project @entity {
+  id: ID!
+  owner: Bytes!
+  token: Bytes!
+  metadata: String!
+  deadline: BigInt!
+  target: BigInt!
+  minFundingAmount: BigInt!
+  maxFundingAmount: BigInt!
+  minDuration: BigInt!
+  maxDuration: BigInt!
+  withdrawn: Boolean!
+  totalRaised: BigInt!
+  contributions: [Contribution!]! @derivedFrom(field: "project")
+}
+
+type Contribution @entity {
+  id: ID!
+  project: Project!
+  funder: Bytes!
+  amount: BigInt!
+  refunded: Boolean!
+}
